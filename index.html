@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DailyMate</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#100b27;color:white;font-family:Arial,sans-serif}
+header{padding:25px 20px;background:linear-gradient(135deg,#5926a3,#190d42)}
+header h1{margin:0;font-size:30px}
+header p{color:#e2d3ff;margin-bottom:0}
+main{padding:18px;max-width:650px;margin:auto}
+.welcome{padding:20px;border-radius:18px;background:#24164a;margin-bottom:20px}
+h2{font-size:19px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:#21183e;border:1px solid #45316c;border-radius:15px;padding:17px;min-height:110px}
+.card span{font-size:27px}
+.card h3{margin:10px 0 5px}
+.card p{color:#c9bce0;font-size:13px;margin:0}
+section{background:#21183e;border-radius:16px;padding:17px;margin-top:18px}
+input,textarea{width:100%;padding:13px;margin:7px 0;background:#120d29;color:white;border:1px solid #66518c;border-radius:9px;font-size:15px}
+button{background:#dba93d;color:#211438;border:0;padding:12px 17px;border-radius:9px;font-weight:bold;margin:5px 3px;cursor:pointer}
+.result{font-size:23px;padding:12px;text-align:right;background:#120d29;border-radius:9px}
+.note{background:#35245b;padding:10px;border-radius:8px;margin-top:8px;overflow-wrap:anywhere}
+footer{text-align:center;color:#b6a6d2;padding:25px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+<h1>👑 DailyMate</h1>
+<p>Your Everyday Smart Companion</p>
+</header>
+<main>
+<div class="welcome">
+<h2>Welcome to DailyMate ✨</h2>
+<p>Your everyday tools, all in one place.</p>
+</div>
+<h2>Explore your tools</h2>
+<div class="grid">
+<div class="card"><span>🧮</span><h3>Calculator</h3><p>Quick calculations</p></div>
+<div class="card"><span>📝</span><h3>Notes</h3><p>Save your ideas</p></div>
+<div class="card"><span>📅</span><h3>Planner</h3><p>Organise your day</p></div>
+<div class="card"><span>⏰</span><h3>Reminders</h3><p>Keep track of tasks</p></div>
+</div>
+<section>
+<h2>🧮 Calculator</h2>
+<div class="result" id="result">0</div>
+<div id="keys"></div>
+</section>
+<section>
+<h2>📝 My Notes</h2>
+<textarea id="noteInput" rows="3" placeholder="Write your note here..."></textarea>
+<button onclick="saveNote()">Save Note</button>
+<div id="notes"></div>
+</section>
+<section>
+<h2>📅 Daily Planner</h2>
+<input id="taskInput" placeholder="Enter your daily task">
+<button onclick="addTask()">Add Task</button>
+<div id="tasks"></div>
+</section>
+<section>
+<h2>⏰ Reminder</h2>
+<input id="reminderText" placeholder="What should you remember?">
+<input id="reminderTime" type="datetime-local">
+<button onclick="addReminder()">Set Reminder</button>
+<div id="reminders"></div>
+</section>
+</main>
+<footer>DailyMate © 2026 · Made for everyday productivity</footer>
+<script>
+const $=id=>document.getElementById(id);
+let expression='';
+const keys=['7','8','9','÷','4','5','6','×','1','2','3','−','0','.','C','+','='];
+keys.forEach(k=>{
+let b=document.createElement('button');b.textContent=k;b.style.width='21%';b.onclick=()=>press(k);$('keys').appendChild(b);
+});
+function press(k){
+if(k==='C'){expression='';$('result').textContent='0';return}
+if(k==='='){
+try{
+let safe=expression.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+if(!/^[0-9+*/.() -]+$/.test(safe))throw Error();
+let value=Function('"use strict";return ('+safe+')')();
+if(!Number.isFinite(value))throw Error();
+expression=String(value);$('result').textContent=expression;
+}catch(e){$('result').textContent='Invalid';expression=''}
+return;
+}
+expression+=k;$('result').textContent=expression;
+}
+let notes=JSON.parse(localStorage.getItem('dm_notes')||'[]');
+function renderNotes(){
+$('notes').innerHTML='';
+notes.forEach((n,i)=>{
+let d=document.createElement('div');d.className='note';d.textContent=n;
+let b=document.createElement('button');b.textContent='Delete';b.onclick=()=>{notes.splice(i,1);storeNotes()};
+d.appendChild(b);$('notes').appendChild(d);
+});
+}
+function storeNotes(){localStorage.setItem('dm_notes',JSON.stringify(notes));renderNotes()}
+function saveNote(){let n=$('noteInput').value.trim();if(n){notes.push(n);$('noteInput').value='';storeNotes()}}
+renderNotes();
+let tasks=JSON.parse(localStorage.getItem('dm_tasks')||'[]');
+function renderTasks(){
+$('tasks').innerHTML='';
+tasks.forEach((t,i)=>{
+let d=document.createElement('div');d.className='note';
+let c=document.createElement('input');c.type='checkbox';c.checked=t.done;c.style.width='auto';c.onchange=()=>{tasks[i].done=c.checked;storeTasks()};
+let s=document.createElement('span');s.textContent=' '+t.text;s.style.textDecoration=t.done?'line-through':'none';
+let b=document.createElement('button');b.textContent='Delete';b.onclick=()=>{tasks.splice(i,1);storeTasks()};
+d.append(c,s,b);$('tasks').appendChild(d);
+});
+}
+function storeTasks(){localStorage.setItem('dm_tasks',JSON.stringify(tasks));renderTasks()}
+function addTask(){let t=$('taskInput').value.trim();if(t){tasks.push({text:t,done:false});$('taskInput').value='';storeTasks()}}
+renderTasks();
+let reminders=JSON.parse(localStorage.getItem('dm_reminders')||'[]');
+function renderReminders(){
+$('reminders').innerHTML='';
+reminders.forEach((r,i)=>{
+let d=document.createElement('div');d.className='note';d.textContent=r.text+' — '+new Date(r.time).toLocaleString();
+let b=document.createElement('button');b.textContent='Delete';b.onclick=()=>{reminders.splice(i,1);storeReminders()};
+d.appendChild(b);$('reminders').appendChild(d);
+});
+}
+function storeReminders(){localStorage.setItem('dm_reminders',JSON.stringify(reminders));renderReminders()}
+function addReminder(){
+let text=$('reminderText').value.trim(),time=$('reminderTime').value;
+if(!text||!time){alert('Enter a reminder and date/time');return}
+if(new Date(time)<=new Date()){alert('Choose a future time');return}
+reminders.push({text,time});$('reminderText').value='';$('reminderTime').value='';storeReminders();
+alert('Reminder saved. Keep DailyMate open to receive its alert.');
+}
+renderReminders();
+setInterval(()=>{
+reminders.forEach(r=>{
+if(!r.done&&!r.alerted&&new Date(r.time)<=new Date()){
+alert('Reminder: '+r.text);r.alerted=true;storeReminders();
+}
+});
+},15000);
+</script>
+</body>
+</html>
